@@ -10,30 +10,47 @@ public class KeyHandler implements KeyListener {
     boolean undo = false;
     boolean redo = false;
     boolean shiftDown = false;
+    boolean toggleGrid = false;
 
+
+    public boolean isToggleGrid() {
+
+        return toggleGrid;
+    }
+
+    public void setToggleGrid(boolean toggleGrid) {
+
+        this.toggleGrid = toggleGrid;
+    }
 
     public boolean isRedo() {
+
         return redo;
     }
 
     public void setRedo(boolean redo) {
+
         this.redo = redo;
     }
 
     public boolean isUndo() {
+
         return undo;
     }
 
     public void setUndo(boolean undoIN) {
+
         undo = undoIN;
     }
 
     public boolean isControlDown() {
+
         return controlDown;
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
+
         int keyCode = e.getKeyCode();
         if (keyCode == KeyEvent.VK_ESCAPE) {
             System.exit(0);
@@ -56,6 +73,7 @@ public class KeyHandler implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
+
         int keyCode = e.getKeyCode();
         if (keyCode == KeyEvent.VK_CONTROL) {
             controlDown = false;
@@ -63,10 +81,15 @@ public class KeyHandler implements KeyListener {
         if (keyCode == KeyEvent.VK_SHIFT) {
             shiftDown = false;
         }
+        if (keyCode == KeyEvent.VK_G) {
+            toggleGrid = true;
+        }
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
+
     }
+
 }
 

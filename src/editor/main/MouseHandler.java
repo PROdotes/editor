@@ -13,33 +13,51 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     boolean middleClick = false;
     boolean shortRightClick = false;
     boolean shortLeftClick = false;
+    boolean doubleClick = false;
 
+
+    public boolean isDoubleClick() {
+
+        return doubleClick;
+    }
+
+    public void setDoubleClick(boolean doubleClick) {
+
+        this.doubleClick = doubleClick;
+    }
 
     public boolean isShortLeftClick() {
+
         return shortLeftClick;
     }
 
     public void setShortLeftClick(boolean shortLeftClick) {
+
         this.shortLeftClick = shortLeftClick;
     }
 
     public boolean isShortRightClick() {
+
         return shortRightClick;
     }
 
     public void setShortRightClick(boolean shortRightClick) {
+
         this.shortRightClick = shortRightClick;
     }
 
     public boolean isMiddleClick() {
+
         return middleClick;
     }
 
     public void setMiddleClick(boolean middleClick) {
+
         this.middleClick = middleClick;
     }
 
     public boolean isRightClick() {
+
         return rightClick;
     }
 
@@ -49,6 +67,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     }
 
     public void setWheelAmount(int wheelAmountIN) {
+
         wheelAmount = wheelAmountIN;
     }
 
@@ -71,11 +90,17 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
 
     @Override
     public void mouseClicked(MouseEvent e) {
+
         if (e.getButton() == MouseEvent.BUTTON3) {
             shortRightClick = true;
         }
         if (e.getButton() == MouseEvent.BUTTON1) {
             shortLeftClick = true;
+            if (e.getClickCount() == 2) {
+                doubleClick = true;
+                mouseX = e.getX();
+                mouseY = e.getY();
+            }
         }
     }
 
@@ -124,6 +149,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
 
     @Override
     public void mouseDragged(MouseEvent e) {
+
         mouseX = e.getX();
         mouseY = e.getY();
 
@@ -131,8 +157,15 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
 
     @Override
     public void mouseMoved(MouseEvent e) {
+
         mouseX = e.getX();
         mouseY = e.getY();
 
     }
+
+    public void setLeftClick(boolean leftClickIn) {
+
+        leftClick = leftClickIn;
+    }
+
 }

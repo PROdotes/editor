@@ -33,6 +33,7 @@ public class ComponentAdapter implements ComponentListener {
 
     @Override
     public void componentResized(ComponentEvent e) {
+
         isResized = true;
         width = e.getComponent().getWidth();
         height = e.getComponent().getHeight();
@@ -40,13 +41,12 @@ public class ComponentAdapter implements ComponentListener {
 
     @Override
     public void componentMoved(ComponentEvent e) {
-        isResized = true;
-        width = e.getComponent().getWidth();
-        height = e.getComponent().getHeight();
+
     }
 
     @Override
     public void componentShown(ComponentEvent e) {
+
     }
 
     @Override

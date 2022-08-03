@@ -27,16 +27,19 @@ public class Canvas {
     int undoIndex = -1;
     boolean lastControlState = false;
     boolean fileOperationActive = false;
+    boolean grid = false;
+    int brushSize = 1;
 
 
     public Canvas(int pixelNumberIN, int pixelSizeIN) {
+
         pixelNumber = pixelNumberIN;
         pixelSize = pixelSizeIN;
         pixels = new Color[pixelNumber][pixelNumber];
 
         for (int i = 0; i < pixelNumber; i++) {
             for (int j = 0; j < pixelNumber; j++) {
-                Color random = new Color(i * 5, j * 5, 0);
+                Color random = new Color(i * pixelSize, j * pixelSize, 0);
                 pixels[i][j] = random;
             }
         }
@@ -49,13 +52,21 @@ public class Canvas {
             loop = 1;
         for (int i = 0; i < pixelNumber; i++) {
             for (int j = 0; j < pixelNumber; j++) {
-                g2d.setColor(pixels[i][j]);
                 for (int k = 0; k < loop; k++) {
                     for (int l = 0; l < loop; l++) {
+                        g2d.setColor(pixels[i][j]);
                         if (displayFullGrid) {
                             g2d.fillRect(posX + i * pixelSize + k * pixelSize * pixelNumber, posY + j * pixelSize + l * pixelSize * pixelNumber, pixelSize, pixelSize);
+                            if (grid) {
+                                g2d.setColor(Color.BLACK);
+                                g2d.drawRect(posX + i * pixelSize + k * pixelSize * pixelNumber, posY + j * pixelSize + l * pixelSize * pixelNumber, pixelSize, pixelSize);
+                            }
                         } else {
                             g2d.fillRect(posX + i * pixelSize * 3 + k * pixelSize * pixelNumber, posY + j * pixelSize * 3 + l * pixelSize * pixelNumber, pixelSize * 3, pixelSize * 3);
+                            if (grid) {
+                                g2d.setColor(Color.BLACK);
+                                g2d.drawRect(posX + i * pixelSize * 3 + k * pixelSize * pixelNumber, posY + j * pixelSize * 3 + l * pixelSize * pixelNumber, pixelSize * 3, pixelSize * 3);
+                            }
                         }
                     }
                 }
@@ -93,6 +104,7 @@ public class Canvas {
     }
 
     private void addToUndo(Color color, Point point) {
+
         while (undoIndex < undoList.size() - 1) {
             undoList.remove(undoList.size() - 1);
         }
@@ -103,6 +115,7 @@ public class Canvas {
     }
 
     private Point checkBounds(int mouseX, int mouseY) {
+
         if (mouseX > posX && mouseX < posX + pixelSize * pixelNumber * 3 && mouseY > posY && mouseY < posY + pixelSize * pixelNumber * 3) {
             return new Point(getClickedPixel(mouseX, mouseY));
         }
@@ -110,6 +123,7 @@ public class Canvas {
     }
 
     private Point getClickedPixel(int mouseX, int mouseY) {
+
         int i, j;
         if (displayFullGrid) {
             i = (mouseX - posX) / pixelSize;
@@ -126,10 +140,12 @@ public class Canvas {
     }
 
     public void toggleDisplayMode() {
+
         displayFullGrid = !displayFullGrid;
     }
 
     public Color getColor(int mouseX, int mouseY) {
+
         Point point = checkBounds(mouseX, mouseY);
         if (point != null) {
             if (preview) {
@@ -143,6 +159,7 @@ public class Canvas {
     }
 
     public boolean preview(int mouseX, int mouseY, boolean controlDown, Color selectedColor) {
+
         boolean returnBool = false;
         if (!fileOperationActive) {
             Point point = checkBounds(mouseX, mouseY);
@@ -154,9 +171,7 @@ public class Canvas {
                         preview = false;
                         fetchPoints(point);
                     } else {
-                        for (Point p : points) {
-                            pixels[p.x][p.y] = previewColor;
-                        }
+                        for (Point p : points) pixels[p.x][p.y] = previewColor;
                         preview = false;
                         points.clear();
                     }
@@ -169,17 +184,13 @@ public class Canvas {
                         if (points.size() < 2) {
                             pixels[point.x][point.y] = selectedColor;
                         } else {
-                            for (Point p : points) {
-                                pixels[p.x][p.y] = selectedColor;
-                            }
+                            for (Point p : points) pixels[p.x][p.y] = selectedColor;
                         }
                     } else {
                         if (points.size() < 2) {
                             pixels[point.x][point.y] = previewColor;
                         } else {
-                            for (Point p : points) {
-                                pixels[p.x][p.y] = previewColor;
-                            }
+                            for (Point p : points) pixels[p.x][p.y] = previewColor;
                         }
                     }
                     returnBool = true;
@@ -188,38 +199,22 @@ public class Canvas {
             if (!notMoved && point != null) {
                 preview = true;
                 if (previewPixel != null) {
-                    if (points.size() < 2) {
-                        pixels[previewPixel.x][previewPixel.y] = previewColor;
-                    } else {
-                        for (Point p : points) {
-                            pixels[p.x][p.y] = previewColor;
-                        }
-                    }
+                    if (points.size() < 2) pixels[previewPixel.x][previewPixel.y] = previewColor;
+                    else for (Point p : points) pixels[p.x][p.y] = previewColor;
                 }
                 previewPixel = point;
-                if (controlDown) {
-                    fetchPoints(point);
-                }
+                if (controlDown) fetchPoints(point);
                 previewColor = pixels[point.x][point.y];
                 if (points.size() < 2) {
                     pixels[point.x][point.y] = selectedColor;
-                } else {
-                    for (Point p : points) {
-                        pixels[p.x][p.y] = selectedColor;
-                    }
-                }
+                } else for (Point p : points) pixels[p.x][p.y] = selectedColor;
                 returnBool = true;
             }
             if (point == null && preview) {
                 preview = false;
                 if (previewPixel != null) {
-                    if (points.size() < 2) {
-                        pixels[previewPixel.x][previewPixel.y] = previewColor;
-                    } else {
-                        for (Point p : points) {
-                            pixels[p.x][p.y] = previewColor;
-                        }
-                    }
+                    if (points.size() < 2) pixels[previewPixel.x][previewPixel.y] = previewColor;
+                    else for (Point p : points) pixels[p.x][p.y] = previewColor;
                 }
                 previewPixel = null;
                 previewColor = null;
@@ -232,11 +227,13 @@ public class Canvas {
     }
 
     private boolean comparePoints(Point point, Point previewPixel) {
+
         if (previewPixel == null || point == null) return false;
         return point.x == previewPixel.x && point.y == previewPixel.y;
     }
 
     public void fetchPoints(Point point) {
+
         Color controlColor = pixels[point.x][point.y];
         points.clear();
         for (int i = 0; i < pixelNumber; i++) {
@@ -249,6 +246,7 @@ public class Canvas {
     }
 
     public void undo() {
+
         if (undoIndex >= 0) {
             Action undo = undoList.get(undoIndex);
             undoIndex--;
@@ -265,6 +263,7 @@ public class Canvas {
     }
 
     public void redo() {
+
         if (undoIndex < undoList.size() - 1) {
             undoIndex++;
             Action redo = undoList.get(undoIndex);
@@ -279,9 +278,10 @@ public class Canvas {
     }
 
     public void openFile(Component parent) {
+
         fileOperationActive = true;
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home") + "/Downloads"));
         FileNameExtensionFilter pngFilter = new FileNameExtensionFilter("PNG files", "png");
         FileNameExtensionFilter jpgFilter = new FileNameExtensionFilter("JPG files", "jpg");
         FileNameExtensionFilter bmpFilter = new FileNameExtensionFilter("BMP files", "bmp");
@@ -294,14 +294,21 @@ public class Canvas {
             File file = fileChooser.getSelectedFile();
             try {
                 BufferedImage image = ImageIO.read(file);
-                if (image.getWidth() != pixelNumber || image.getHeight() != pixelNumber) {
-                    JOptionPane.showMessageDialog(parent, "Image size does not match grid size", "Error", JOptionPane.ERROR_MESSAGE);
+                if (image.getWidth() != image.getHeight()) {
+                    JOptionPane.showMessageDialog(parent, "Image size not proportional", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                if (image.getWidth() > 256 || image.getHeight() > 256) {
+                    JOptionPane.showMessageDialog(parent, "Image size too large", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                pixelNumber = image.getWidth();
+                System.out.println(pixelNumber);
+                pixelSize = parent.getWidth() / pixelNumber / 3;
+                pixels = new Color[pixelNumber][pixelNumber];
                 for (int i = 0; i < pixelNumber; i++) {
                     for (int j = 0; j < pixelNumber; j++) {
-                        pixels[i][j] = new Color(image.getRGB(i , j ));
-                        System.out.println(pixels[i][j]);
+                        pixels[i][j] = new Color(image.getRGB(i, j));
                     }
                 }
             } catch (IOException e) {
@@ -313,9 +320,10 @@ public class Canvas {
     }
 
     public void saveFile(Component parent) {
+
         fileOperationActive = true;
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home") + "/Downloads"));
         FileNameExtensionFilter pngFilter = new FileNameExtensionFilter("PNG files", "png");
         fileChooser.setFileFilter(pngFilter);
         fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
@@ -348,7 +356,62 @@ public class Canvas {
     }
 
     public void resize(int min) {
+
         pixelSize = min;
+    }
+
+    public void flood(Color color, Component parent) {
+
+        if (preview) {
+            preview = false;
+            pixels[previewPixel.x][previewPixel.y] = previewColor;
+            previewPixel = null;
+            if (points.size() > 1) {
+                for (Point p : points) {
+                    pixels[p.x][p.y] = previewColor;
+                }
+            }
+            previewColor = null;
+            points.clear();
+        }
+        int confirm;
+        confirm = JOptionPane.showConfirmDialog(parent, "Fill entire canvas?", "Confirm", JOptionPane.YES_NO_OPTION);
+        if (confirm == JFileChooser.APPROVE_OPTION) {
+            for (int i = 0; i < pixelNumber; i++) {
+                for (int j = 0; j < pixelNumber; j++) {
+                    pixels[i][j] = color;
+                }
+            }
+        }
+    }
+
+    public void toggleGrid() {
+
+        grid = !grid;
+        System.out.println("Grid: " + grid);
+    }
+
+    public int getPixelNumber() {
+
+        return pixelNumber;
+
+    }
+
+    public void changePixels(int value, int width) {
+
+        pixelNumber = value;
+        pixelSize = width / pixelNumber / 3;
+        pixels = new Color[pixelNumber][pixelNumber];
+        for (int i = 0; i < pixelNumber; i++) {
+            for (int j = 0; j < pixelNumber; j++) {
+                pixels[i][j] = new Color(i * pixelSize, j * pixelSize, 0);
+            }
+        }
+    }
+
+    public void setBrushSize(int value) {
+
+        brushSize = value;
     }
 
 }

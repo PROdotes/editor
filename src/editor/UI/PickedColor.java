@@ -67,4 +67,9 @@ public class PickedColor {
         return pickedColor;
     }
 
+    public boolean checkDoubleClick(int mouseX, int mouseY) {
+
+        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    }
+
 }

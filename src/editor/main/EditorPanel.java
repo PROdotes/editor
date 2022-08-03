@@ -1,13 +1,12 @@
 package editor.main;
 
 
-import editor.UI.*;
 import editor.UI.Button;
 import editor.UI.Canvas;
+import editor.UI.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentListener;
 
 
 public class EditorPanel extends JPanel implements Runnable {
@@ -25,9 +24,11 @@ public class EditorPanel extends JPanel implements Runnable {
     Slider red = new Slider(160, 255, 0, "Red");
     Slider green = new Slider(200, 255, 0, "Gre");
     Slider blue = new Slider(240, 255, 255, "Blu");
+    Slider brush = new Slider(300, 256, 1, "Brsh");
     PickedColor pickedColor = new PickedColor(new Color(0, 0, 255));
-    Button openFile = new Button(30, 290, 70,30, "Open");
-    Button saveFile = new Button(120, 290, 70,30, "Save");
+    Button openFile = new Button(30, 350, 70, 30, "Open");
+    Button saveFile = new Button(120, 350, 70, 30, "Save");
+    Button resizeCanvas = new Button(210, 350, 70, 30, "Resize");
     Canvas canvas = new Canvas(pixelNumber, pixelSize);
     Thread thread;
 
@@ -59,12 +60,24 @@ public class EditorPanel extends JPanel implements Runnable {
             boolean left = mouseHandler.isShortLeftClick() || mouseHandler.isLeftClick();
             mouseHandler.setShortRightClick(false);
             mouseHandler.setShortLeftClick(false);
+            if (keyHandler.isToggleGrid()) {
+                canvas.toggleGrid();
+                keyHandler.setToggleGrid(false);
+                repaint();
+            }
+            if (mouseHandler.isDoubleClick())
+                if (pickedColor.checkDoubleClick(mouseHandler.getMouseX(), mouseHandler.getMouseY()))
+                    canvas.flood(pickedColor.getColor(), this);
+            mouseHandler.setDoubleClick(false);
             if (componentAdapter.isResized()) {
                 int rightLen = componentAdapter.getWidth() - leftPadding;
                 int topLen = componentAdapter.getHeight();
-                int min = Math.min(rightLen, topLen) / (3*pixelNumber);
+                int min = Math.min(rightLen, topLen) / (3 * pixelNumber);
                 System.out.println("min: " + min);
+                System.out.println("rightLen: " + rightLen);
+                System.out.println("topLen: " + topLen);
                 canvas.resize(min);
+                componentAdapter.setResized(false);
                 repaint();
             }
             if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left, keyHandler.isControlDown(), right)) {
@@ -73,6 +86,7 @@ public class EditorPanel extends JPanel implements Runnable {
             }
             if (checkButtons(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left)) {
                 repaint();
+                mouseHandler.setLeftClick(false);
             }
             if (left || mouseHandler.getWheelAmount() != 0) {
                 checkSliders(mouseHandler.getMouseX(), mouseHandler.getMouseY(), mouseHandler.getWheelAmount());
@@ -98,9 +112,11 @@ public class EditorPanel extends JPanel implements Runnable {
     }
 
     private boolean checkButtons(int mouseX, int mouseY, boolean click) {
+
         if (openFile.checkMouseOver(mouseX, mouseY)) {
             if (click) {
                 canvas.openFile(this);
+                pixelNumber = canvas.getPixelNumber();
                 return true;
             }
             return true;
@@ -108,6 +124,18 @@ public class EditorPanel extends JPanel implements Runnable {
         if (saveFile.checkMouseOver(mouseX, mouseY)) {
             if (click) {
                 canvas.saveFile(this);
+                return true;
+            }
+            return true;
+        }
+        if (resizeCanvas.checkMouseOver(mouseX, mouseY)) {
+            if (click) {
+                int clicked;
+                clicked = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to " + brush.getValue() + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
+                if (clicked == JOptionPane.YES_OPTION) {
+                    canvas.changePixels(brush.getValue(), Math.min(this.getWidth() - leftPadding, this.getHeight()));
+                    pixelNumber = canvas.getPixelNumber();
+                }
                 return true;
             }
             return true;
@@ -140,6 +168,8 @@ public class EditorPanel extends JPanel implements Runnable {
         boolean updatedRGB = red.checkClicked(mouseX, mouseY, wheelAmmount);
         updatedRGB = green.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
         updatedRGB = blue.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
+        boolean brushCheck = brush.checkClicked(mouseX, mouseY, wheelAmmount);
+        if (brushCheck) canvas.setBrushSize(brush.getValue());
         if (updatedHSB) {
             pickedColor.setPickedColorHSB(hue.getValue(), saturation.getValue(), brightness.getValue());
             red.setValue(pickedColor.getRed());
@@ -184,24 +214,29 @@ public class EditorPanel extends JPanel implements Runnable {
         blue.draw(g2d);
         pickedColor.draw(g2d);
         canvas.draw(g2d);
+        brush.draw(g2d);
         drawInformation(g2d);
         openFile.draw(g2d);
         saveFile.draw(g2d);
+        resizeCanvas.draw(g2d);
         g.dispose();
     }
 
     private void drawInformation(Graphics2D g2d) {
-        int top = 360;
+
+        int top = 410;
         Font font = new Font("Arial", Font.BOLD, 12);
         g2d.setFont(font);
         g2d.setColor(Color.WHITE);
         g2d.drawString("Click sliders to change value", 30, top);
-        g2d.drawString("Scroll mouse wheel over slider to change picked colour", 30, top+20);
-        g2d.drawString("Click canvas to change pixel colour to picked colour", 30, top+40);
-        g2d.drawString("Click right mouse button to set picked colour to canvas pixel colour", 30, top+60);
-        g2d.drawString("Click middle mouse button to zoom in and out", 30, top+80);
-        g2d.drawString("Control click to change all selected colours to picked colour", 30, top+100);
-        g2d.drawString("Ctrl+Z to undo and Ctrl+Shift+Z to redo", 30, top+120);
+        g2d.drawString("Scroll mouse wheel over slider to change picked colour", 30, top + 20);
+        g2d.drawString("Click canvas to change pixel colour to picked colour", 30, top + 40);
+        g2d.drawString("Click right mouse button to set picked colour to canvas pixel colour", 30, top + 60);
+        g2d.drawString("Click middle mouse button to zoom in and out", 30, top + 80);
+        g2d.drawString("Control click to change all selected colours to picked colour", 30, top + 100);
+        g2d.drawString("Ctrl+Z to undo and Ctrl+Shift+Z to redo", 30, top + 120);
+        g2d.drawString("Double click the active colour to fill the entire image", 30, top + 140);
+        g2d.drawString("G to toggle grid view", 30, top + 160);
     }
 
 }
