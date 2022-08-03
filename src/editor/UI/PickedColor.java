@@ -7,7 +7,7 @@ import java.awt.*;
 public class PickedColor {
 
     private static Color pickedColor;
-    int x = 180, y = 50, width = 150, height = 65;
+    int x = 200, y = 55, width = 150, height = 65;
 
     public PickedColor(Color color) {
 
@@ -28,43 +28,43 @@ public class PickedColor {
 
     public void setPickedColorRGB(int red, int green, int blue) {
 
-            pickedColor = new Color(red, green, blue);
+        pickedColor = new Color(red, green, blue);
 
     }
 
     public int getHue() {
 
-            return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[0] * 360);
+        return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[0] * 360);
     }
 
     public int getSaturation() {
 
-            return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[1] * 100);
+        return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[1] * 100);
     }
 
     public int getBrightness() {
 
-            return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[2] * 100);
+        return (int) (Color.RGBtoHSB(pickedColor.getRed(), pickedColor.getGreen(), pickedColor.getBlue(), null)[2] * 100);
     }
 
     public int getRed() {
 
-            return pickedColor.getRed();
+        return pickedColor.getRed();
     }
 
     public int getGreen() {
 
-            return pickedColor.getGreen();
+        return pickedColor.getGreen();
     }
 
     public int getBlue() {
 
-            return pickedColor.getBlue();
+        return pickedColor.getBlue();
     }
 
     public Color getColor() {
 
-                return pickedColor;
+        return pickedColor;
     }
 
 }

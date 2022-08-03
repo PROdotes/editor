@@ -1,19 +1,37 @@
 package editor.main;
 
 
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
+import java.awt.event.*;
 
 
-public class MouseHandler implements MouseListener, MouseWheelListener {
+public class MouseHandler implements MouseListener, MouseWheelListener, MouseMotionListener {
     int mouseX = 0;
     int mouseY = 0;
     int wheelAmount = 0;
     boolean mouseDown = false;
+    boolean rightClick = false;
+    boolean middleClick = false;
+    boolean shortRightClick = false;
 
+    public boolean isShortRightClick() {
+        return shortRightClick;
+    }
 
+    public void setShortRightClick(boolean shortRightClick) {
+        this.shortRightClick = shortRightClick;
+    }
+
+    public boolean isMiddleClick() {
+        return middleClick;
+    }
+
+    public void setMiddleClick(boolean middleClick) {
+        this.middleClick = middleClick;
+    }
+
+    public boolean isRightClick() {
+        return rightClick;
+    }
 
     public int getWheelAmount() {
 
@@ -22,13 +40,6 @@ public class MouseHandler implements MouseListener, MouseWheelListener {
 
     public void setWheelAmount(int wheelAmountIN) {
         wheelAmount = wheelAmountIN;
-    }
-
-
-
-    public void setMouseDown(boolean mouseDown) {
-
-        this.mouseDown = mouseDown;
     }
 
 
@@ -47,23 +58,36 @@ public class MouseHandler implements MouseListener, MouseWheelListener {
         return mouseY;
     }
 
+
     @Override
     public void mouseClicked(MouseEvent e) {
-
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            shortRightClick = true;
+        }
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
 
+        if (e.getButton() == MouseEvent.BUTTON1) {
+            mouseDown = true;
+        }
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            rightClick = true;
+        }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
 
         if (e.getButton() == MouseEvent.BUTTON1) {
-            mouseX = e.getX();
-            mouseY = e.getY();
-            mouseDown = true;
+            mouseDown = false;
+        }
+        if (e.getButton() == MouseEvent.BUTTON2) {
+            middleClick = true;
+        }
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            rightClick = false;
         }
     }
 
@@ -80,8 +104,22 @@ public class MouseHandler implements MouseListener, MouseWheelListener {
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
 
-            wheelAmount = e.getWheelRotation();
-            mouseX = e.getX(); mouseY = e.getY();
+        wheelAmount = e.getWheelRotation();
+        mouseX = e.getX();
+        mouseY = e.getY();
     }
 
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        mouseX = e.getX();
+        mouseY = e.getY();
+
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        mouseX = e.getX();
+        mouseY = e.getY();
+
+    }
 }
