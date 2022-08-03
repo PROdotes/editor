@@ -131,9 +131,11 @@ public class EditorPanel extends JPanel implements Runnable {
         if (resizeCanvas.checkMouseOver(mouseX, mouseY)) {
             if (click) {
                 int clicked;
-                clicked = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to " + brush.getValue() + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
+                int resizeValue = brush.getValue();
+                if (resizeValue == 1) resizeValue = 2;
+                clicked = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to the brush size of " + resizeValue + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
                 if (clicked == JOptionPane.YES_OPTION) {
-                    canvas.changePixels(brush.getValue(), Math.min(this.getWidth() - leftPadding, this.getHeight()));
+                    canvas.changePixels(resizeValue, Math.min(this.getWidth() - leftPadding, this.getHeight()));
                     pixelNumber = canvas.getPixelNumber();
                 }
                 return true;
@@ -160,16 +162,22 @@ public class EditorPanel extends JPanel implements Runnable {
         return false;
     }
 
-    private void checkSliders(int mouseX, int mouseY, int wheelAmmount) {
+    private void checkSliders(int mouseX, int mouseY, int wheelAmount) {
 
-        boolean updatedHSB = hue.checkClicked(mouseX, mouseY, wheelAmmount);
-        updatedHSB = saturation.checkClicked(mouseX, mouseY, wheelAmmount) || updatedHSB;
-        updatedHSB = brightness.checkClicked(mouseX, mouseY, wheelAmmount) || updatedHSB;
-        boolean updatedRGB = red.checkClicked(mouseX, mouseY, wheelAmmount);
-        updatedRGB = green.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
-        updatedRGB = blue.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
-        boolean brushCheck = brush.checkClicked(mouseX, mouseY, wheelAmmount);
-        if (brushCheck) canvas.setBrushSize(brush.getValue());
+        boolean updatedHSB = hue.checkClicked(mouseX, mouseY, wheelAmount);
+        updatedHSB = saturation.checkClicked(mouseX, mouseY, wheelAmount) || updatedHSB;
+        updatedHSB = brightness.checkClicked(mouseX, mouseY, wheelAmount) || updatedHSB;
+        boolean updatedRGB = red.checkClicked(mouseX, mouseY, wheelAmount);
+        updatedRGB = green.checkClicked(mouseX, mouseY, wheelAmount) || updatedRGB;
+        updatedRGB = blue.checkClicked(mouseX, mouseY, wheelAmount) || updatedRGB;
+        boolean brushCheck = brush.checkClicked(mouseX, mouseY, wheelAmount);
+        if (brushCheck) {
+            canvas.setBrushSize(brush.getValue());
+            if (canvas.getBrushSize() == 0) {
+                canvas.setBrushSize(1);
+                brush.setValue(1);
+            }
+        }
         if (updatedHSB) {
             pickedColor.setPickedColorHSB(hue.getValue(), saturation.getValue(), brightness.getValue());
             red.setValue(pickedColor.getRed());
@@ -189,17 +197,19 @@ public class EditorPanel extends JPanel implements Runnable {
     private void drawSliders() {
 
         hue.setSlider(SliderImageGenerator.generateHue(pickedColor.getSaturation(), pickedColor.getBrightness()));
-        hue.setValue(pickedColor.getHue());
         saturation.setSlider(SliderImageGenerator.generateSaturation(pickedColor.getHue(), pickedColor.getBrightness()));
-        saturation.setValue(pickedColor.getSaturation());
         brightness.setSlider(SliderImageGenerator.generateBrightness(pickedColor.getHue(), pickedColor.getSaturation()));
-        brightness.setValue(pickedColor.getBrightness());
         red.setSlider(SliderImageGenerator.generateRed(pickedColor.getGreen(), pickedColor.getBlue()));
-        red.setValue(pickedColor.getRed());
         green.setSlider(SliderImageGenerator.generateGreen(pickedColor.getRed(), pickedColor.getBlue()));
-        green.setValue(pickedColor.getGreen());
         blue.setSlider(SliderImageGenerator.generateBlue(pickedColor.getRed(), pickedColor.getGreen()));
-        blue.setValue(pickedColor.getBlue());
+        if (mouseHandler.isRightClick() || mouseHandler.isShortRightClick()) {
+            hue.setValue(pickedColor.getHue());
+            saturation.setValue(pickedColor.getSaturation());
+            brightness.setValue(pickedColor.getBrightness());
+            red.setValue(pickedColor.getRed());
+            green.setValue(pickedColor.getGreen());
+            blue.setValue(pickedColor.getBlue());
+        }
     }
 
     public void paintComponent(Graphics g) {

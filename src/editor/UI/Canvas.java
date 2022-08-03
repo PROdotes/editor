@@ -414,6 +414,12 @@ public class Canvas {
         brushSize = value;
     }
 
+    public int getBrushSize() {
+
+            return brushSize;
+
+    }
+
 }
 
 
