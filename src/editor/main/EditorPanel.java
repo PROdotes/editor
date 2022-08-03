@@ -2,6 +2,7 @@ package editor.main;
 
 
 import editor.UI.*;
+import editor.UI.Button;
 import editor.UI.Canvas;
 
 import javax.swing.*;
@@ -22,6 +23,8 @@ public class EditorPanel extends JPanel implements Runnable {
     Slider green = new Slider(200, 255, 0, "Gre");
     Slider blue = new Slider(240, 255, 255, "Blu");
     PickedColor pickedColor = new PickedColor(new Color(0, 0, 255));
+    Button openFile = new Button(30, 290, 70,30, "Open");
+    Button saveFile = new Button(120, 290, 70,30, "Save");
     Canvas canvas = new Canvas(pixelNumber, pixelSize);
     Thread thread;
 
@@ -49,11 +52,16 @@ public class EditorPanel extends JPanel implements Runnable {
 
         while (thread != null) {
             boolean right = mouseHandler.isRightClick() || mouseHandler.isShortRightClick();
+            boolean left = mouseHandler.isShortLeftClick() || mouseHandler.isLeftClick();
             mouseHandler.setShortRightClick(false);
-            if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), mouseHandler.isMouseDown(), keyHandler.isControlDown(), right)) {
+            mouseHandler.setShortLeftClick(false);
+            if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left, keyHandler.isControlDown(), right)) {
                 repaint();
             }
-            if (mouseHandler.isMouseDown() || mouseHandler.getWheelAmount() != 0) {
+            if (checkButtons(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left)) {
+                repaint();
+            }
+            if (left || mouseHandler.getWheelAmount() != 0) {
                 checkSliders(mouseHandler.getMouseX(), mouseHandler.getMouseY(), mouseHandler.getWheelAmount());
                 repaint();
                 mouseHandler.setWheelAmount(0);
@@ -63,7 +71,35 @@ public class EditorPanel extends JPanel implements Runnable {
                 mouseHandler.setMiddleClick(false);
                 repaint();
             }
+            if (keyHandler.isUndo()) {
+                canvas.undo();
+                keyHandler.setUndo(false);
+                repaint();
+            }
+            if (keyHandler.isRedo()) {
+                canvas.redo();
+                keyHandler.setRedo(false);
+                repaint();
+            }
         }
+    }
+
+    private boolean checkButtons(int mouseX, int mouseY, boolean click) {
+        if (openFile.checkMouseOver(mouseX, mouseY)) {
+            if (click) {
+                canvas.openFile(this);
+                return true;
+            }
+            return true;
+        }
+        if (saveFile.checkMouseOver(mouseX, mouseY)) {
+            if (click) {
+                canvas.saveFile(this);
+                return true;
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean checkCanvas(int mouseX, int mouseY, boolean leftClick, boolean controlDown, boolean rightClick) {
@@ -130,19 +166,23 @@ public class EditorPanel extends JPanel implements Runnable {
         pickedColor.draw(g2d);
         canvas.draw(g2d);
         drawInformation(g2d);
+        openFile.draw(g2d);
+        saveFile.draw(g2d);
         g.dispose();
     }
 
     private void drawInformation(Graphics2D g2d) {
+        int top = 360;
         Font font = new Font("Arial", Font.BOLD, 12);
         g2d.setFont(font);
         g2d.setColor(Color.WHITE);
-        g2d.drawString("Click sliders to change value", 30, 320);
-        g2d.drawString("Scroll mouse wheel over slider to change picked colour", 30, 340);
-        g2d.drawString("Click canvas to change pixel colour to picked colour", 30, 360);
-        g2d.drawString("Click right mouse button to set picked colour to canvas pixel colour", 30, 380);
-        g2d.drawString("Click middle mouse button to toggle canvas display mode", 30, 400);
-        g2d.drawString("Control click to change all selected colours to picked colour", 30, 420);
+        g2d.drawString("Click sliders to change value", 30, top);
+        g2d.drawString("Scroll mouse wheel over slider to change picked colour", 30, top+20);
+        g2d.drawString("Click canvas to change pixel colour to picked colour", 30, top+40);
+        g2d.drawString("Click right mouse button to set picked colour to canvas pixel colour", 30, top+60);
+        g2d.drawString("Click middle mouse button to toggle canvas display mode", 30, top+80);
+        g2d.drawString("Control click to change all selected colours to picked colour", 30, top+100);
+        g2d.drawString("Ctrl+Z to undo and Ctrl+Shift+Z to redo", 30, top+120);
     }
 
 }

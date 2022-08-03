@@ -8,10 +8,20 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     int mouseX = 0;
     int mouseY = 0;
     int wheelAmount = 0;
-    boolean mouseDown = false;
+    boolean leftClick = false;
     boolean rightClick = false;
     boolean middleClick = false;
     boolean shortRightClick = false;
+    boolean shortLeftClick = false;
+
+
+    public boolean isShortLeftClick() {
+        return shortLeftClick;
+    }
+
+    public void setShortLeftClick(boolean shortLeftClick) {
+        this.shortLeftClick = shortLeftClick;
+    }
 
     public boolean isShortRightClick() {
         return shortRightClick;
@@ -43,9 +53,9 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     }
 
 
-    public boolean isMouseDown() {
+    public boolean isLeftClick() {
 
-        return mouseDown;
+        return leftClick;
     }
 
     public int getMouseX() {
@@ -64,13 +74,16 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
         if (e.getButton() == MouseEvent.BUTTON3) {
             shortRightClick = true;
         }
+        if (e.getButton() == MouseEvent.BUTTON1) {
+            shortLeftClick = true;
+        }
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
 
         if (e.getButton() == MouseEvent.BUTTON1) {
-            mouseDown = true;
+            leftClick = true;
         }
         if (e.getButton() == MouseEvent.BUTTON3) {
             rightClick = true;
@@ -81,7 +94,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     public void mouseReleased(MouseEvent e) {
 
         if (e.getButton() == MouseEvent.BUTTON1) {
-            mouseDown = false;
+            leftClick = false;
         }
         if (e.getButton() == MouseEvent.BUTTON2) {
             middleClick = true;
