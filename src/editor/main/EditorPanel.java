@@ -57,6 +57,7 @@ public class EditorPanel extends JPanel implements Runnable {
             mouseHandler.setShortLeftClick(false);
             if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left, keyHandler.isControlDown(), right)) {
                 repaint();
+                if (right) drawSliders();
             }
             if (checkButtons(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left)) {
                 repaint();
@@ -146,11 +147,17 @@ public class EditorPanel extends JPanel implements Runnable {
     private void drawSliders() {
 
         hue.setSlider(SliderImageGenerator.generateHue(pickedColor.getSaturation(), pickedColor.getBrightness()));
+        hue.setValue(pickedColor.getHue());
         saturation.setSlider(SliderImageGenerator.generateSaturation(pickedColor.getHue(), pickedColor.getBrightness()));
+        saturation.setValue(pickedColor.getSaturation());
         brightness.setSlider(SliderImageGenerator.generateBrightness(pickedColor.getHue(), pickedColor.getSaturation()));
+        brightness.setValue(pickedColor.getBrightness());
         red.setSlider(SliderImageGenerator.generateRed(pickedColor.getGreen(), pickedColor.getBlue()));
+        red.setValue(pickedColor.getRed());
         green.setSlider(SliderImageGenerator.generateGreen(pickedColor.getRed(), pickedColor.getBlue()));
+        green.setValue(pickedColor.getGreen());
         blue.setSlider(SliderImageGenerator.generateBlue(pickedColor.getRed(), pickedColor.getGreen()));
+        blue.setValue(pickedColor.getBlue());
     }
 
     public void paintComponent(Graphics g) {
