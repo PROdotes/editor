@@ -46,4 +46,8 @@ public class Slider {
         return value;
     }
 
+    public void setValue(int valueIN) {
+        value = valueIN;
+    }
+
 }

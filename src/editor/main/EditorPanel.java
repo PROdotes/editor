@@ -2,6 +2,7 @@ package editor.main;
 
 
 import editor.UI.*;
+import editor.UI.Canvas;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,16 +10,17 @@ import java.awt.*;
 
 public class EditorPanel extends JPanel implements Runnable {
 
-    int screenWidth = 800, screenHeight = 800;
+    int screenWidth = 672+400, screenHeight = 672;
     KeyHandler keyHandler = new KeyHandler();
     MouseHandler mouseHandler = new MouseHandler();
     HueSlider hue = new HueSlider(10, 360, 240);
     SaturationSlider saturation = new SaturationSlider(50, 100, 100);
     BrightnessSlider brightness = new BrightnessSlider(90, 100, 100);
-    PickedColor pickedColor = new PickedColor(new Color(Color.HSBtoRGB(hue.getValue(), saturation.getValue(), brightness.getValue())));
     RedSlider red = new RedSlider(150, 255, 0);
     GreenSlider green = new GreenSlider(190, 255, 0);
     BlueSlider blue = new BlueSlider(230, 255, 255);
+    PickedColor pickedColor = new PickedColor(new Color(0, 0, 255));
+    Canvas canvas = new Canvas();
     Thread thread;
 
     public EditorPanel() {
@@ -45,6 +47,7 @@ public class EditorPanel extends JPanel implements Runnable {
         while (thread != null) {
             if (mouseHandler.isMouseDown() || mouseHandler.getWheelAmount() != 0) {
                 checkSliders(mouseHandler.getMouseX(), mouseHandler.getMouseY(), mouseHandler.getWheelAmount());
+                checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY());
                 repaint();
                 mouseHandler.setMouseDown(false);
                 mouseHandler.setWheelAmount(0);
@@ -52,26 +55,45 @@ public class EditorPanel extends JPanel implements Runnable {
         }
     }
 
+    private void checkCanvas(int mouseX, int mouseY) {
+
+            canvas.checkClick(mouseX, mouseY, pickedColor.getColor());
+    }
+
     private void checkSliders(int mouseX, int mouseY, int wheelAmmount) {
 
-        boolean checkSliders = hue.checkClicked(mouseX, mouseY, wheelAmmount);
-        checkSliders = saturation.checkClicked(mouseX, mouseY, wheelAmmount) || checkSliders;
-        checkSliders = brightness.checkClicked(mouseX, mouseY, wheelAmmount) || checkSliders;
-        checkSliders = red.checkClicked(mouseX, mouseY, wheelAmmount) || checkSliders;
-        if (checkSliders) {
+        boolean updatedHSB = hue.checkClicked(mouseX, mouseY, wheelAmmount);
+        updatedHSB = saturation.checkClicked(mouseX, mouseY, wheelAmmount) || updatedHSB;
+        updatedHSB = brightness.checkClicked(mouseX, mouseY, wheelAmmount) || updatedHSB;
+        boolean updatedRGB = red.checkClicked(mouseX, mouseY, wheelAmmount);
+        updatedRGB = green.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
+        updatedRGB = blue.checkClicked(mouseX, mouseY, wheelAmmount) || updatedRGB;
+        if (updatedHSB) {
+            System.out.println("updatedHSB");
+            pickedColor.setPickedColorHSB(hue.getValue(), saturation.getValue(), brightness.getValue());
+            red.setValue(pickedColor.getRed());
+            green.setValue(pickedColor.getGreen());
+            blue.setValue(pickedColor.getBlue());
+        } else if (updatedRGB) {
+            System.out.println("updatedRGB");
+            pickedColor.setPickedColorRGB(red.getValue(), green.getValue(), blue.getValue());
+            hue.setValue(pickedColor.getHue());
+            saturation.setValue(pickedColor.getSaturation());
+            brightness.setValue(pickedColor.getBrightness());
+        }
+        if (updatedHSB || updatedRGB) {
             drawSliders();
         }
     }
 
     private void drawSliders() {
 
-        hue.setSlider(SliderImageGenerator.generateHue(saturation.getValue(), brightness.getValue()));
-        saturation.setSlider(SliderImageGenerator.generateSaturation(hue.getValue(), brightness.getValue()));
-        brightness.setSlider(SliderImageGenerator.generateBrightness(hue.getValue(), saturation.getValue()));
-        pickedColor.setPickedColor(hue.getValue(), saturation.getValue(), brightness.getValue());
-        red.setSlider(SliderImageGenerator.generateRed(0,255));
-        green.setSlider(SliderImageGenerator.generateGreen(0,255));
-        blue.setSlider(SliderImageGenerator.generateBlue(0,0));
+        hue.setSlider(SliderImageGenerator.generateHue(pickedColor.getSaturation(), pickedColor.getBrightness()));
+        saturation.setSlider(SliderImageGenerator.generateSaturation(pickedColor.getHue(), pickedColor.getBrightness()));
+        brightness.setSlider(SliderImageGenerator.generateBrightness(pickedColor.getHue(), pickedColor.getSaturation()));
+        red.setSlider(SliderImageGenerator.generateRed(pickedColor.getGreen(), pickedColor.getBlue()));
+        green.setSlider(SliderImageGenerator.generateGreen( pickedColor.getRed(), pickedColor.getBlue()));
+        blue.setSlider(SliderImageGenerator.generateBlue(pickedColor.getRed(), pickedColor.getGreen()));
     }
 
     public void paintComponent(Graphics g) {
@@ -85,6 +107,8 @@ public class EditorPanel extends JPanel implements Runnable {
         red.draw(g2d);
         green.draw(g2d);
         blue.draw(g2d);
+        canvas.draw(g2d);
+        g.dispose();
     }
 
 }
