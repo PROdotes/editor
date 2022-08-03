@@ -7,15 +7,18 @@ import editor.UI.Canvas;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentListener;
 
 
 public class EditorPanel extends JPanel implements Runnable {
 
     int pixelNumber = 32;
     int pixelSize = 8;
-    int screenWidth = 450 + pixelNumber * pixelSize * 3, screenHeight = pixelNumber * pixelSize * 3;
+    int leftPadding = 450;
+    int screenWidth = leftPadding + pixelNumber * pixelSize * 3, screenHeight = pixelNumber * pixelSize * 3;
     KeyHandler keyHandler = new KeyHandler();
     MouseHandler mouseHandler = new MouseHandler();
+    ComponentAdapter componentAdapter = new ComponentAdapter();
     Slider hue = new Slider(10, 360, 240, "Hue");
     Slider saturation = new Slider(50, 100, 100, "Sat");
     Slider brightness = new Slider(90, 100, 100, "Bri");
@@ -37,6 +40,7 @@ public class EditorPanel extends JPanel implements Runnable {
         addMouseListener(mouseHandler);
         addMouseWheelListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
+        addComponentListener(componentAdapter);
         setFocusable(true);
     }
 
@@ -55,6 +59,14 @@ public class EditorPanel extends JPanel implements Runnable {
             boolean left = mouseHandler.isShortLeftClick() || mouseHandler.isLeftClick();
             mouseHandler.setShortRightClick(false);
             mouseHandler.setShortLeftClick(false);
+            if (componentAdapter.isResized()) {
+                int rightLen = componentAdapter.getWidth() - leftPadding;
+                int topLen = componentAdapter.getHeight();
+                int min = Math.min(rightLen, topLen) / (3*pixelNumber);
+                System.out.println("min: " + min);
+                canvas.resize(min);
+                repaint();
+            }
             if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left, keyHandler.isControlDown(), right)) {
                 repaint();
                 if (right) drawSliders();
@@ -187,7 +199,7 @@ public class EditorPanel extends JPanel implements Runnable {
         g2d.drawString("Scroll mouse wheel over slider to change picked colour", 30, top+20);
         g2d.drawString("Click canvas to change pixel colour to picked colour", 30, top+40);
         g2d.drawString("Click right mouse button to set picked colour to canvas pixel colour", 30, top+60);
-        g2d.drawString("Click middle mouse button to toggle canvas display mode", 30, top+80);
+        g2d.drawString("Click middle mouse button to zoom in and out", 30, top+80);
         g2d.drawString("Control click to change all selected colours to picked colour", 30, top+100);
         g2d.drawString("Ctrl+Z to undo and Ctrl+Shift+Z to redo", 30, top+120);
     }

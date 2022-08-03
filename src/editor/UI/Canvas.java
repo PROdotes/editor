@@ -44,11 +44,14 @@ public class Canvas {
 
     public void draw(Graphics2D g2d) {
 
+        int loop = 3;
+        if (!displayFullGrid)
+            loop = 1;
         for (int i = 0; i < pixelNumber; i++) {
             for (int j = 0; j < pixelNumber; j++) {
                 g2d.setColor(pixels[i][j]);
-                for (int k = 0; k < 3; k++) {
-                    for (int l = 0; l < 3; l++) {
+                for (int k = 0; k < loop; k++) {
+                    for (int l = 0; l < loop; l++) {
                         if (displayFullGrid) {
                             g2d.fillRect(posX + i * pixelSize + k * pixelSize * pixelNumber, posY + j * pixelSize + l * pixelSize * pixelNumber, pixelSize, pixelSize);
                         } else {
@@ -129,11 +132,12 @@ public class Canvas {
     public Color getColor(int mouseX, int mouseY) {
         Point point = checkBounds(mouseX, mouseY);
         if (point != null) {
-            if (!preview) {
-                return pixels[point.x][point.y];
-            } else {
-                return previewColor;
+            if (preview) {
+                pixels[point.x][point.y] = previewColor;
+                preview = false;
+                lastTime = System.currentTimeMillis();
             }
+            return pixels[point.x][point.y];
         }
         return null;
     }
@@ -342,6 +346,11 @@ public class Canvas {
         lastTime = System.currentTimeMillis();
         fileOperationActive = false;
     }
+
+    public void resize(int min) {
+        pixelSize = min;
+    }
+
 }
 
 
