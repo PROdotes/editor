@@ -19,7 +19,8 @@ public class Canvas {
     boolean zoomedOutView = true;
     Color[][] pixels;
     ArrayList<Point> drawPixels = new ArrayList<>();
-    ArrayList<Action> undoList = new ArrayList<>();
+    ArrayList<ArrayList<Action>> undoList = new ArrayList<>();
+    ArrayList<Action> tempUndo = new ArrayList<>();
     int undoIndex = -1;
     boolean showGrid = false;
     int brushSize = 1;
@@ -40,7 +41,7 @@ public class Canvas {
         }
     }
 
-    public void draw(Graphics2D g2d) {
+    public void draw(Graphics2D g2d, boolean control) {
 
         int loop = 3;
         if (!zoomedOutView)
@@ -70,43 +71,71 @@ public class Canvas {
                 }
             }
         }
-        g2d.setColor(Color.darkGray);
-        if (drawPixels.size() > 0) {
+        g2d.setColor(Color.white);
+        if (drawPixels.size() > 0 && !control) {
+            ArrayList<Rectangle> rectangleArrayList = new ArrayList<>();
             int half = (brushSize % 2 == 1) ? pixelSize / 2 : pixelSize;
             int centerX = drawPixels.get(0).x * pixelSize + half;
             int centerY = drawPixels.get(0).y * pixelSize + half;
             int width = brushSize * pixelSize;
-            g2d.setColor(Color.red);
             if (zoomedOutView) {
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        g2d.drawRect(centerX - width / 2 + posX + i * pixelSize * pixelNumber, centerY - width / 2 + posY + j * pixelSize * pixelNumber, width, width);
+                        rectangleArrayList.add(new Rectangle(centerX - width / 2 + posX + i * pixelSize * pixelNumber, centerY - width / 2 + posY + j * pixelSize * pixelNumber, width, width));
                     }
                 }
             } else {
                 int startX = (centerX - width / 2) * 3;
                 int startY = (centerY - width / 2) * 3 + posY;
                 width = width * 3;
-                int height = width;
-                if (startX < 0) {
-                    width += startX;
-                    startX = 0;
-                }
-                if (startX + width > pixelNumber * pixelSize * 3) {
-                    width = pixelNumber * pixelSize * 3 - startX;
-                }
-                if (startY < 0) {
-                    height += startY;
-                    startY = 0;
-                }
-                if (startY + height > pixelNumber * pixelSize * 3) {
-                    height = pixelNumber * pixelSize * 3 - startY;
-                }
                 startX += posX;
                 startY += posY;
-
-                g2d.drawRect(startX, startY, width, height);
+                rectangleArrayList.add(new Rectangle(startX, startY, width, width));
             }
+            ArrayList<Rectangle> rectangleArrayList2 = new ArrayList<>();
+            for (Rectangle rectangle : rectangleArrayList) {
+                checkXRectangle(rectangle, rectangleArrayList2);
+            }
+            rectangleArrayList.clear();
+            for (Rectangle rectangle : rectangleArrayList2) {
+                checkYRectangle(rectangle, rectangleArrayList);
+            }
+            for (Rectangle rect : rectangleArrayList) {
+                g2d.drawRect(rect.x, rect.y, rect.width, rect.height);
+            }
+        } else {
+            for (Point point : drawPixels) {
+                for (int k = 0; k < loop; k++)
+                    for (int l = 0; l < loop; l++)
+                        g2d.drawRect(posX + point.x * pixelSize * (4 - loop) + k * pixelSize * pixelNumber, posY + point.y * pixelSize * (4 - loop) + l * pixelSize * pixelNumber, pixelSize * (4 - loop), pixelSize * (4 - loop));
+            }
+        }
+    }
+
+    private void checkYRectangle(Rectangle rectangle, ArrayList<Rectangle> rectangleArrayList) {
+
+        if (rectangle.y < posY) {
+            rectangleArrayList.add(new Rectangle(rectangle.x, posY, rectangle.width, rectangle.height + rectangle.y - posY));
+            rectangleArrayList.add(new Rectangle(rectangle.x, rectangle.y + pixelNumber * pixelSize * 3, rectangle.width, rectangle.height - rectangle.y + posY));
+        } else if (rectangle.y + rectangle.height > posY + pixelNumber * pixelSize * 3) {
+            rectangleArrayList.add(new Rectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height - rectangle.y + posY + pixelNumber * pixelSize * 3));
+            rectangleArrayList.add(new Rectangle(rectangle.x, posY, rectangle.width, rectangle.height + rectangle.y - posY - pixelSize * pixelNumber * 3));
+        } else {
+            rectangleArrayList.add(rectangle);
+        }
+
+    }
+
+    private void checkXRectangle(Rectangle rectangle, ArrayList<Rectangle> rectangleArrayList) {
+
+        if (rectangle.x < posX) {
+            rectangleArrayList.add(new Rectangle(posX, rectangle.y, rectangle.width + rectangle.x - posX, rectangle.height));
+            rectangleArrayList.add(new Rectangle(rectangle.x + pixelNumber * pixelSize * 3, rectangle.y, rectangle.width - rectangle.x + posX, rectangle.height));
+        } else if (rectangle.x + rectangle.width > posX + pixelNumber * pixelSize * 3) {
+            rectangleArrayList.add(new Rectangle(rectangle.x, rectangle.y, rectangle.width - rectangle.x + posX + pixelNumber * pixelSize * 3, rectangle.height));
+            rectangleArrayList.add(new Rectangle(posX, rectangle.y, rectangle.width + rectangle.x - posX - pixelSize * pixelNumber * 3, rectangle.height));
+        } else {
+            rectangleArrayList.add(rectangle);
         }
     }
 
@@ -116,33 +145,18 @@ public class Canvas {
         if (centerPoint != null) {
             if (drawPixels.size() > 0) {
                 if (drawPixels.get(0).x == centerPoint.x && drawPixels.get(0).y == centerPoint.y) {
-                    return false;
+                    return true;
                 }
             }
-            drawPixels.clear();
-            drawPixels.add(centerPoint);
-            if (brushSize > 1) {
-                int end = brushSize / 2;
-                int start = -end;
-                if (brushSize % 2 == 0) {
-                    start++;
-                }
-                for (int i = start; i <= end; i++) {
-                    int x = centerPoint.x + i;
-                    if (x < 0)
-                        x += pixelNumber;
-                    if (x >= pixelNumber)
-                        x -= pixelNumber;
-                    for (int j = start; j <= end; j++) {
-                        if (i != 0 || j != 0) {
-                            int y = centerPoint.y + j;
-                            if (y < 0)
-                                y += pixelNumber;
-                            if (y >= pixelNumber)
-                                y -= pixelNumber;
-                            if (!drawPixels.contains(new Point(x, y))) {
-                                drawPixels.add(new Point(x, y));
-                            }
+            if (!controlDown) {
+                drawPixels.clear();
+                drawPixels.add(centerPoint);
+            } else {
+                drawPixels.clear();
+                for (int i = 0; i < pixelNumber; i++) {
+                    for (int j = 0; j < pixelNumber; j++) {
+                        if (pixels[i][j].equals(pixels[centerPoint.x][centerPoint.y])) {
+                            drawPixels.add(new Point(i, j));
                         }
                     }
                 }
@@ -158,37 +172,72 @@ public class Canvas {
     public boolean setPixelColor(int mouseX, int mouseY, Color color, boolean controlDown) {
 
         Point point = checkBounds(mouseX, mouseY);
+        Point oldPoint = drawPixels.size() > 0 ? drawPixels.get(0) : point;
+        if (point != null) preview(mouseX, mouseY, controlDown);
         if (point != null && pixels[point.x][point.y] != color) {
             if (!controlDown) {
-                for (Point drawPixel : drawPixels) {
-                    addToUndo(pixels[drawPixel.x][drawPixel.y], drawPixel);
-                    pixels[drawPixel.x][drawPixel.y] = color;
+
+                int end = brushSize / 2;
+                int start = -end;
+                if (brushSize % 2 == 0) {
+                    start++;
                 }
-            } else {
-                Color replaceColor = pixels[point.x][point.y];
-                for (int i = 0; i < pixelNumber; i++) {
-                    for (int j = 0; j < pixelNumber; j++) {
-                        if (pixels[i][j] == replaceColor) {
-                            addToUndo(color, new Point(i, j));
-                            pixels[i][j] = color;
+                for (int i = start; i <= end; i++) {
+                    int x = point.x + i;
+                    if (x < 0)
+                        x += pixelNumber;
+                    if (x >= pixelNumber)
+                        x -= pixelNumber;
+                    for (int j = start; j <= end; j++) {
+                        if (i != 0 || j != 0) {
+                            int y = point.y + j;
+                            if (y < 0)
+                                y += pixelNumber;
+                            if (y >= pixelNumber)
+                                y -= pixelNumber;
+                            if (!drawPixels.contains(new Point(x, y))) {
+                                drawPixels.add(new Point(x, y));
+                            }
                         }
                     }
                 }
+
+                for (Point drawPixel : drawPixels) {
+                    addToUndo(color, drawPixel);
+                    pixels[drawPixel.x][drawPixel.y] = color;
+                }
+                pushTempToUndo();
+            } else {
+                for (Point drawPixel : drawPixels) {
+                    addToUndo(color, drawPixel);
+                    pixels[drawPixel.x][drawPixel.y] = color;
+                }
+                pushTempToUndo();
+                drawPixels.clear();
+                drawPixels.add(point);
             }
             return true;
         }
+        if (point != null)
+            return oldPoint.x != point.x || oldPoint.y != point.y;
         return false;
     }
 
-    private void addToUndo(Color newColor, Point point) {
+    private void pushTempToUndo() {
 
         while (undoIndex < undoList.size() - 1) {
             undoList.remove(undoList.size() - 1);
         }
-        undoList.add(new Action(point, pixels[point.x][point.y], newColor));
+
+        undoList.add(new ArrayList<>(tempUndo));
         undoIndex++;
-        System.out.println("Added to undo list: " + undoList.get(undoIndex).getString());
-        System.out.println("Undo list size: " + undoList.size());
+        tempUndo.clear();
+    }
+
+    private void addToUndo(Color newColor, Point point) {
+
+        tempUndo.add(new Action(point, pixels[point.x][point.y], newColor));
+        System.out.println("Added to undo:" + point.x + "," + point.y + " " + pixels[point.x][point.y] + " " + newColor);
     }
 
     private Point checkBounds(int mouseX, int mouseY) {
@@ -233,10 +282,11 @@ public class Canvas {
     public void undo() {
 
         if (undoIndex >= 0) {
-            Action undo = undoList.get(undoIndex);
+            ArrayList<Action> undoStep = undoList.get(undoIndex);
+            for (Action undo : undoStep) {
+                pixels[undo.getX()][undo.getY()] = undo.getOldColor();
+            }
             undoIndex--;
-            pixels[undo.getX()][undo.getY()] = undo.getOldColor();
-            System.out.println("Undid: " + undo.getString());
         }
         System.out.println(undoIndex);
     }
@@ -245,14 +295,10 @@ public class Canvas {
 
         if (undoIndex < undoList.size() - 1) {
             undoIndex++;
-            Action redo = undoList.get(undoIndex);
-            pixels[redo.getX()][redo.getY()] = redo.getNewColor();
-        }
-
-        System.out.println("Undo list");
-        for (Action action : undoList) {
-            System.out.println(action.getString());
-            System.out.println(undoIndex);
+            ArrayList<Action> redoList = undoList.get(undoIndex);
+            for (Action redo : redoList) {
+                pixels[redo.getX()][redo.getY()] = redo.getNewColor();
+            }
         }
     }
 
@@ -343,6 +389,7 @@ public class Canvas {
                     pixels[i][j] = color;
                 }
             }
+            pushTempToUndo();
         }
     }
 

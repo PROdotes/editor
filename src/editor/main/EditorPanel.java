@@ -167,7 +167,7 @@ public class EditorPanel extends JPanel {
         green.draw(g2d);
         blue.draw(g2d);
         pickedColor.draw(g2d);
-        canvas.draw(g2d);
+        canvas.draw(g2d, keyHandler.isControlDown());
         brush.draw(g2d);
         drawInformation(g2d);
         openFile.draw(g2d);
