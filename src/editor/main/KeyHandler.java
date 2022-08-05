@@ -6,42 +6,15 @@ import java.awt.event.KeyListener;
 
 
 public class KeyHandler implements KeyListener {
+    EditorPanel editorPanel;
     boolean controlDown = false;
-    boolean undo = false;
-    boolean redo = false;
     boolean shiftDown = false;
-    boolean toggleGrid = false;
 
+    public KeyHandler(EditorPanel editorPanelIN) {
 
-    public boolean isToggleGrid() {
-
-        return toggleGrid;
+        editorPanel = editorPanelIN;
     }
 
-    public void setToggleGrid(boolean toggleGrid) {
-
-        this.toggleGrid = toggleGrid;
-    }
-
-    public boolean isRedo() {
-
-        return redo;
-    }
-
-    public void setRedo(boolean redo) {
-
-        this.redo = redo;
-    }
-
-    public boolean isUndo() {
-
-        return undo;
-    }
-
-    public void setUndo(boolean undoIN) {
-
-        undo = undoIN;
-    }
 
     public boolean isControlDown() {
 
@@ -57,16 +30,17 @@ public class KeyHandler implements KeyListener {
         }
         if (keyCode == KeyEvent.VK_CONTROL) {
             controlDown = true;
+            editorPanel.controlToggle();
         }
         if (keyCode == KeyEvent.VK_SHIFT) {
             shiftDown = true;
         }
         if (keyCode == KeyEvent.VK_Z) {
             if (controlDown && !shiftDown) {
-                undo = true;
+                editorPanel.undo();
             }
             if (controlDown && shiftDown) {
-                redo = true;
+                editorPanel.redo();
             }
         }
     }
@@ -77,12 +51,13 @@ public class KeyHandler implements KeyListener {
         int keyCode = e.getKeyCode();
         if (keyCode == KeyEvent.VK_CONTROL) {
             controlDown = false;
+            editorPanel.controlToggle();
         }
         if (keyCode == KeyEvent.VK_SHIFT) {
             shiftDown = false;
         }
         if (keyCode == KeyEvent.VK_G) {
-            toggleGrid = true;
+            editorPanel.toggleGrid();
         }
     }
 

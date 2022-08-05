@@ -9,15 +9,15 @@ import javax.swing.*;
 import java.awt.*;
 
 
-public class EditorPanel extends JPanel implements Runnable {
+public class EditorPanel extends JPanel {
 
-    int pixelNumber = 32;
-    int pixelSize = 8;
+    int pixelNumber = 20;
     int leftPadding = 450;
+    int pixelSize = 785 / 20 / 3;
     int screenWidth = leftPadding + pixelNumber * pixelSize * 3, screenHeight = pixelNumber * pixelSize * 3;
-    KeyHandler keyHandler = new KeyHandler();
-    MouseHandler mouseHandler = new MouseHandler();
-    ComponentAdapter componentAdapter = new ComponentAdapter();
+    KeyHandler keyHandler = new KeyHandler(this);
+    MouseHandler mouseHandler = new MouseHandler(this);
+    ComponentAdapter componentAdapter = new ComponentAdapter(this);
     Slider hue = new Slider(10, 360, 240, "Hue");
     Slider saturation = new Slider(50, 100, 100, "Sat");
     Slider brightness = new Slider(90, 100, 100, "Bri");
@@ -30,7 +30,7 @@ public class EditorPanel extends JPanel implements Runnable {
     Button saveFile = new Button(120, 350, 70, 30, "Save");
     Button resizeCanvas = new Button(210, 350, 70, 30, "Resize");
     Canvas canvas = new Canvas(pixelNumber, pixelSize);
-    Thread thread;
+    long lastZoom = System.currentTimeMillis();
 
     public EditorPanel() {
 
@@ -47,105 +47,43 @@ public class EditorPanel extends JPanel implements Runnable {
 
     public void startThread() {
 
-        thread = new Thread(this);
-        thread.start();
         drawSliders();
-    }
-
-    @Override
-    public void run() {
-
-        while (thread != null) {
-            boolean right = mouseHandler.isRightClick() || mouseHandler.isShortRightClick();
-            boolean left = mouseHandler.isShortLeftClick() || mouseHandler.isLeftClick();
-            mouseHandler.setShortRightClick(false);
-            mouseHandler.setShortLeftClick(false);
-            if (keyHandler.isToggleGrid()) {
-                canvas.toggleGrid();
-                keyHandler.setToggleGrid(false);
-                repaint();
-            }
-            if (mouseHandler.isDoubleClick())
-                if (pickedColor.checkDoubleClick(mouseHandler.getMouseX(), mouseHandler.getMouseY()))
-                    canvas.flood(pickedColor.getColor(), this);
-            mouseHandler.setDoubleClick(false);
-            if (componentAdapter.isResized()) {
-                int rightLen = componentAdapter.getWidth() - leftPadding;
-                int topLen = componentAdapter.getHeight();
-                int min = Math.min(rightLen, topLen) / (3 * pixelNumber);
-                System.out.println("min: " + min);
-                System.out.println("rightLen: " + rightLen);
-                System.out.println("topLen: " + topLen);
-                canvas.resize(min);
-                componentAdapter.setResized(false);
-                repaint();
-            }
-            if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left, keyHandler.isControlDown(), right)) {
-                repaint();
-                if (right) drawSliders();
-            }
-            if (checkButtons(mouseHandler.getMouseX(), mouseHandler.getMouseY(), left)) {
-                repaint();
-                mouseHandler.setLeftClick(false);
-            }
-            if (left || mouseHandler.getWheelAmount() != 0) {
-                checkSliders(mouseHandler.getMouseX(), mouseHandler.getMouseY(), mouseHandler.getWheelAmount());
-                repaint();
-                mouseHandler.setWheelAmount(0);
-            }
-            if (mouseHandler.isMiddleClick()) {
-                canvas.toggleDisplayMode();
-                mouseHandler.setMiddleClick(false);
-                repaint();
-            }
-            if (keyHandler.isUndo()) {
-                canvas.undo();
-                keyHandler.setUndo(false);
-                repaint();
-            }
-            if (keyHandler.isRedo()) {
-                canvas.redo();
-                keyHandler.setRedo(false);
-                repaint();
-            }
-        }
     }
 
     private boolean checkButtons(int mouseX, int mouseY, boolean click) {
 
         if (openFile.checkMouseOver(mouseX, mouseY)) {
             if (click) {
+                openFile.click();
                 canvas.openFile(this);
                 pixelNumber = canvas.getPixelNumber();
-                return true;
             }
             return true;
         }
         if (saveFile.checkMouseOver(mouseX, mouseY)) {
             if (click) {
+                saveFile.click();
                 canvas.saveFile(this);
-                return true;
             }
             return true;
         }
         if (resizeCanvas.checkMouseOver(mouseX, mouseY)) {
             if (click) {
-                int clicked;
-                int resizeValue = brush.getValue();
-                if (resizeValue == 1) resizeValue = 2;
-                clicked = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to the brush size of " + resizeValue + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
-                if (clicked == JOptionPane.YES_OPTION) {
-                    canvas.changePixels(resizeValue, Math.min(this.getWidth() - leftPadding, this.getHeight()));
+                resizeCanvas.click();
+                int resizeValue = (brush.getValue() == 1) ? 2 : brush.getValue();
+                int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to the brush size of " + resizeValue + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    int minPixelSize = Math.min(this.getWidth() - leftPadding, this.getHeight());
+                    canvas.changePixels(resizeValue, minPixelSize);
                     pixelNumber = canvas.getPixelNumber();
                 }
-                return true;
             }
             return true;
         }
         return false;
     }
 
-    private boolean checkCanvas(int mouseX, int mouseY, boolean leftClick, boolean controlDown, boolean rightClick) {
+    private boolean checkCanvas(int mouseX, int mouseY, boolean leftClick, boolean rightClick, boolean controlDown) {
 
         if (rightClick) {
             Color color = canvas.getColor(mouseX, mouseY);
@@ -154,15 +92,14 @@ public class EditorPanel extends JPanel implements Runnable {
                 return true;
             }
         } else if (leftClick) {
-            canvas.setColor(mouseX, mouseY, pickedColor.getColor(), controlDown);
-            return true;
+            return canvas.setPixelColor(mouseX, mouseY, pickedColor.getColor(), controlDown);
         } else {
-            return canvas.preview(mouseX, mouseY, controlDown, pickedColor.getColor());
+            return canvas.preview(mouseX, mouseY, controlDown);
         }
         return false;
     }
 
-    private void checkSliders(int mouseX, int mouseY, int wheelAmount) {
+    private boolean checkSliders(int mouseX, int mouseY, int wheelAmount) {
 
         boolean updatedHSB = hue.checkClicked(mouseX, mouseY, wheelAmount);
         updatedHSB = saturation.checkClicked(mouseX, mouseY, wheelAmount) || updatedHSB;
@@ -177,21 +114,36 @@ public class EditorPanel extends JPanel implements Runnable {
                 canvas.setBrushSize(1);
                 brush.setValue(1);
             }
+            if (canvas.getBrushSize() > pixelNumber) {
+                canvas.setBrushSize(pixelNumber);
+                //brush.setValue(pixelNumber);
+            }
         }
         if (updatedHSB) {
             pickedColor.setPickedColorHSB(hue.getValue(), saturation.getValue(), brightness.getValue());
-            red.setValue(pickedColor.getRed());
-            green.setValue(pickedColor.getGreen());
-            blue.setValue(pickedColor.getBlue());
+            updateRGBValues();
         } else if (updatedRGB) {
             pickedColor.setPickedColorRGB(red.getValue(), green.getValue(), blue.getValue());
-            hue.setValue(pickedColor.getHue());
-            saturation.setValue(pickedColor.getSaturation());
-            brightness.setValue(pickedColor.getBrightness());
+            updateHSBValues();
         }
         if (updatedHSB || updatedRGB) {
             drawSliders();
         }
+        return updatedHSB || updatedRGB || brushCheck;
+    }
+
+    private void updateHSBValues() {
+
+        hue.setValue(pickedColor.getHue());
+        saturation.setValue(pickedColor.getSaturation());
+        brightness.setValue(pickedColor.getBrightness());
+    }
+
+    private void updateRGBValues() {
+
+        red.setValue(pickedColor.getRed());
+        green.setValue(pickedColor.getGreen());
+        blue.setValue(pickedColor.getBlue());
     }
 
     private void drawSliders() {
@@ -202,14 +154,6 @@ public class EditorPanel extends JPanel implements Runnable {
         red.setSlider(SliderImageGenerator.generateRed(pickedColor.getGreen(), pickedColor.getBlue()));
         green.setSlider(SliderImageGenerator.generateGreen(pickedColor.getRed(), pickedColor.getBlue()));
         blue.setSlider(SliderImageGenerator.generateBlue(pickedColor.getRed(), pickedColor.getGreen()));
-        if (mouseHandler.isRightClick() || mouseHandler.isShortRightClick()) {
-            hue.setValue(pickedColor.getHue());
-            saturation.setValue(pickedColor.getSaturation());
-            brightness.setValue(pickedColor.getBrightness());
-            red.setValue(pickedColor.getRed());
-            green.setValue(pickedColor.getGreen());
-            blue.setValue(pickedColor.getBlue());
-        }
     }
 
     public void paintComponent(Graphics g) {
@@ -247,6 +191,96 @@ public class EditorPanel extends JPanel implements Runnable {
         g2d.drawString("Ctrl+Z to undo and Ctrl+Shift+Z to redo", 30, top + 120);
         g2d.drawString("Double click the active colour to fill the entire image", 30, top + 140);
         g2d.drawString("G to toggle grid view", 30, top + 160);
+        g2d.drawString("Right click the picked color to change grid color", 30, top + 180);
+    }
+
+    public void toggleGrid() {
+
+        canvas.toggleGrid();
+        repaint();
+    }
+
+    public void undo() {
+
+        canvas.undo();
+        repaint();
+    }
+
+    public void redo() {
+
+        canvas.redo();
+        repaint();
+    }
+
+
+    public void doubleClick(int x, int y) {
+
+        if (pickedColor.checkIfClicked(x, y)) {
+            canvas.flood(pickedColor.getColor(), this);
+            repaint();
+        }
+    }
+
+    public void handleLeftClick(int x, int y) {
+
+        if (checkButtons(x, y, true))
+            repaint();
+        if (checkSliders(x, y, 0))
+            repaint();
+        if (checkCanvas(x, y, true, false, keyHandler.isControlDown()))
+            repaint();
+    }
+
+    public void handleRightClick(int x, int y) {
+
+        if (checkCanvas(x, y, false, true, keyHandler.isControlDown())) {
+            updateRGBValues();
+            updateHSBValues();
+            repaint();
+        }
+        if (pickedColor.checkIfClicked(x, y)) {
+            System.out.println("Right click");
+            canvas.setGridColor(pickedColor.getColor());
+            repaint();
+        }
+    }
+
+    public void handleMouseWheel(int wheelRotation, int x, int y) {
+
+        if (checkSliders(x, y, wheelRotation))
+            repaint();
+
+    }
+
+    public void toggleZoom() {
+
+        if (System.currentTimeMillis() - lastZoom > 200) {
+            lastZoom = System.currentTimeMillis();
+            canvas.toggleZoom();
+            repaint();
+        }
+    }
+
+    public void handleMouseMoved(int x, int y) {
+
+        if (checkButtons(x, y, false))
+            repaint();
+        if (checkCanvas(x, y, false, false, keyHandler.isControlDown()))
+            repaint();
+    }
+
+    public void handleResize(int width, int height) {
+
+        int rightLen = width - leftPadding;
+        int min = Math.min(rightLen, height) / (3 * pixelNumber);
+        canvas.resize(min);
+        repaint();
+    }
+
+    public void controlToggle() {
+
+        if (checkCanvas(mouseHandler.getMouseX(), mouseHandler.getMouseY(), false, false, keyHandler.isControlDown()))
+            repaint();
     }
 
 }

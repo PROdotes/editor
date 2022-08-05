@@ -16,19 +16,14 @@ import java.util.ArrayList;
 public class Canvas {
     int pixelNumber, pixelSize;
     int posX = 450, posY = 0;
-    boolean displayFullGrid = true;
+    boolean zoomedOutView = true;
     Color[][] pixels;
-    long lastTime = System.currentTimeMillis();
-    Point previewPixel = null;
-    Color previewColor = null;
-    boolean preview = false;
-    ArrayList<Point> points = new ArrayList<>();
+    ArrayList<Point> drawPixels = new ArrayList<>();
     ArrayList<Action> undoList = new ArrayList<>();
     int undoIndex = -1;
-    boolean lastControlState = false;
-    boolean fileOperationActive = false;
-    boolean grid = false;
+    boolean showGrid = false;
     int brushSize = 1;
+    Color gridColor = Color.black;
 
 
     public Canvas(int pixelNumberIN, int pixelSizeIN) {
@@ -48,67 +43,149 @@ public class Canvas {
     public void draw(Graphics2D g2d) {
 
         int loop = 3;
-        if (!displayFullGrid)
+        if (!zoomedOutView)
             loop = 1;
         for (int i = 0; i < pixelNumber; i++) {
             for (int j = 0; j < pixelNumber; j++) {
                 for (int k = 0; k < loop; k++) {
                     for (int l = 0; l < loop; l++) {
                         g2d.setColor(pixels[i][j]);
-                        if (displayFullGrid) {
-                            g2d.fillRect(posX + i * pixelSize + k * pixelSize * pixelNumber, posY + j * pixelSize + l * pixelSize * pixelNumber, pixelSize, pixelSize);
-                            if (grid) {
-                                g2d.setColor(Color.BLACK);
-                                g2d.drawRect(posX + i * pixelSize + k * pixelSize * pixelNumber, posY + j * pixelSize + l * pixelSize * pixelNumber, pixelSize, pixelSize);
-                            }
-                        } else {
-                            g2d.fillRect(posX + i * pixelSize * 3 + k * pixelSize * pixelNumber, posY + j * pixelSize * 3 + l * pixelSize * pixelNumber, pixelSize * 3, pixelSize * 3);
-                            if (grid) {
-                                g2d.setColor(Color.BLACK);
-                                g2d.drawRect(posX + i * pixelSize * 3 + k * pixelSize * pixelNumber, posY + j * pixelSize * 3 + l * pixelSize * pixelNumber, pixelSize * 3, pixelSize * 3);
-                            }
+                        g2d.fillRect(posX + i * pixelSize * (4 - loop) + k * pixelSize * pixelNumber, posY + j * pixelSize * (4 - loop) + l * pixelSize * pixelNumber, pixelSize * (4 - loop), pixelSize * (4 - loop));
+                        if (showGrid) {
+                            g2d.setColor(gridColor);
+                            g2d.drawRect(posX + i * pixelSize * (4 - loop) + k * pixelSize * pixelNumber, posY + j * pixelSize * (4 - loop) + l * pixelSize * pixelNumber, pixelSize * (4 - loop), pixelSize * (4 - loop));
                         }
                     }
                 }
             }
         }
-    }
-
-    public void setColor(int mouseX, int mouseY, Color color, boolean controlDown) {
-
-        Point point = checkBounds(mouseX, mouseY);
-        if (preview && point != null) {
-            if (comparePoints(point, previewPixel)) {
-                preview = false;
-                pixels[point.x][point.y] = previewColor;
+        if (showGrid) {
+            g2d.setColor(Color.red);
+            g2d.drawRect(posX, posY, pixelNumber * pixelSize * 3, pixelNumber * pixelSize * 3);
+            if (zoomedOutView) {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        g2d.drawRect(posX + i * pixelSize * pixelNumber, posY + j * pixelSize * pixelNumber, pixelSize * pixelNumber, pixelSize * pixelNumber);
+                    }
+                }
             }
         }
+        g2d.setColor(Color.darkGray);
+        if (drawPixels.size() > 0) {
+            int half = (brushSize % 2 == 1) ? pixelSize / 2 : pixelSize;
+            int centerX = drawPixels.get(0).x * pixelSize + half;
+            int centerY = drawPixels.get(0).y * pixelSize + half;
+            int width = brushSize * pixelSize;
+            g2d.setColor(Color.red);
+            if (zoomedOutView) {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        g2d.drawRect(centerX - width / 2 + posX + i * pixelSize * pixelNumber, centerY - width / 2 + posY + j * pixelSize * pixelNumber, width, width);
+                    }
+                }
+            } else {
+                int startX = (centerX - width / 2) * 3;
+                int startY = (centerY - width / 2) * 3 + posY;
+                width = width * 3;
+                int height = width;
+                if (startX < 0) {
+                    width += startX;
+                    startX = 0;
+                }
+                if (startX + width > pixelNumber * pixelSize * 3) {
+                    width = pixelNumber * pixelSize * 3 - startX;
+                }
+                if (startY < 0) {
+                    height += startY;
+                    startY = 0;
+                }
+                if (startY + height > pixelNumber * pixelSize * 3) {
+                    height = pixelNumber * pixelSize * 3 - startY;
+                }
+                startX += posX;
+                startY += posY;
+
+                g2d.drawRect(startX, startY, width, height);
+            }
+        }
+    }
+
+    public boolean preview(int mouseX, int mouseY, boolean controlDown) {
+
+        Point centerPoint = checkBounds(mouseX, mouseY);
+        if (centerPoint != null) {
+            if (drawPixels.size() > 0) {
+                if (drawPixels.get(0).x == centerPoint.x && drawPixels.get(0).y == centerPoint.y) {
+                    return false;
+                }
+            }
+            drawPixels.clear();
+            drawPixels.add(centerPoint);
+            if (brushSize > 1) {
+                int end = brushSize / 2;
+                int start = -end;
+                if (brushSize % 2 == 0) {
+                    start++;
+                }
+                for (int i = start; i <= end; i++) {
+                    int x = centerPoint.x + i;
+                    if (x < 0)
+                        x += pixelNumber;
+                    if (x >= pixelNumber)
+                        x -= pixelNumber;
+                    for (int j = start; j <= end; j++) {
+                        if (i != 0 || j != 0) {
+                            int y = centerPoint.y + j;
+                            if (y < 0)
+                                y += pixelNumber;
+                            if (y >= pixelNumber)
+                                y -= pixelNumber;
+                            if (!drawPixels.contains(new Point(x, y))) {
+                                drawPixels.add(new Point(x, y));
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            if (drawPixels.size() < 1)
+                return false;
+            drawPixels.clear();
+        }
+        return true;
+    }
+
+    public boolean setPixelColor(int mouseX, int mouseY, Color color, boolean controlDown) {
+
+        Point point = checkBounds(mouseX, mouseY);
         if (point != null && pixels[point.x][point.y] != color) {
             if (!controlDown) {
-                addToUndo(color, point);
-                pixels[point.x][point.y] = color;
+                for (Point drawPixel : drawPixels) {
+                    addToUndo(pixels[drawPixel.x][drawPixel.y], drawPixel);
+                    pixels[drawPixel.x][drawPixel.y] = color;
+                }
             } else {
                 Color replaceColor = pixels[point.x][point.y];
                 for (int i = 0; i < pixelNumber; i++) {
                     for (int j = 0; j < pixelNumber; j++) {
                         if (pixels[i][j] == replaceColor) {
-                            addToUndo(color, point);
+                            addToUndo(color, new Point(i, j));
                             pixels[i][j] = color;
                         }
                     }
                 }
             }
-            previewPixel = null;
-            points.clear();
+            return true;
         }
+        return false;
     }
 
-    private void addToUndo(Color color, Point point) {
+    private void addToUndo(Color newColor, Point point) {
 
         while (undoIndex < undoList.size() - 1) {
             undoList.remove(undoList.size() - 1);
         }
-        undoList.add(new Action(point, pixels[point.x][point.y], color));
+        undoList.add(new Action(point, pixels[point.x][point.y], newColor));
         undoIndex++;
         System.out.println("Added to undo list: " + undoList.get(undoIndex).getString());
         System.out.println("Undo list size: " + undoList.size());
@@ -125,7 +202,7 @@ public class Canvas {
     private Point getClickedPixel(int mouseX, int mouseY) {
 
         int i, j;
-        if (displayFullGrid) {
+        if (zoomedOutView) {
             i = (mouseX - posX) / pixelSize;
             if (i >= pixelNumber) i -= pixelNumber;
             if (i >= pixelNumber) i -= pixelNumber;
@@ -139,110 +216,18 @@ public class Canvas {
         return new Point(i, j);
     }
 
-    public void toggleDisplayMode() {
+    public void toggleZoom() {
 
-        displayFullGrid = !displayFullGrid;
+        zoomedOutView = !zoomedOutView;
     }
 
     public Color getColor(int mouseX, int mouseY) {
 
         Point point = checkBounds(mouseX, mouseY);
         if (point != null) {
-            if (preview) {
-                pixels[point.x][point.y] = previewColor;
-                preview = false;
-                lastTime = System.currentTimeMillis();
-            }
             return pixels[point.x][point.y];
         }
         return null;
-    }
-
-    public boolean preview(int mouseX, int mouseY, boolean controlDown, Color selectedColor) {
-
-        boolean returnBool = false;
-        if (!fileOperationActive) {
-            Point point = checkBounds(mouseX, mouseY);
-            boolean notMoved = comparePoints(point, previewPixel);
-            if (point != null && notMoved) {
-                if (controlDown != lastControlState) {
-                    if (controlDown) {
-                        if (preview) pixels[point.x][point.y] = previewColor;
-                        preview = false;
-                        fetchPoints(point);
-                    } else {
-                        for (Point p : points) pixels[p.x][p.y] = previewColor;
-                        preview = false;
-                        points.clear();
-                    }
-                }
-                long now = System.currentTimeMillis();
-                if (now - lastTime > 250) {
-                    preview = !preview;
-                    lastTime = now;
-                    if (preview) {
-                        if (points.size() < 2) {
-                            pixels[point.x][point.y] = selectedColor;
-                        } else {
-                            for (Point p : points) pixels[p.x][p.y] = selectedColor;
-                        }
-                    } else {
-                        if (points.size() < 2) {
-                            pixels[point.x][point.y] = previewColor;
-                        } else {
-                            for (Point p : points) pixels[p.x][p.y] = previewColor;
-                        }
-                    }
-                    returnBool = true;
-                }
-            }
-            if (!notMoved && point != null) {
-                preview = true;
-                if (previewPixel != null) {
-                    if (points.size() < 2) pixels[previewPixel.x][previewPixel.y] = previewColor;
-                    else for (Point p : points) pixels[p.x][p.y] = previewColor;
-                }
-                previewPixel = point;
-                if (controlDown) fetchPoints(point);
-                previewColor = pixels[point.x][point.y];
-                if (points.size() < 2) {
-                    pixels[point.x][point.y] = selectedColor;
-                } else for (Point p : points) pixels[p.x][p.y] = selectedColor;
-                returnBool = true;
-            }
-            if (point == null && preview) {
-                preview = false;
-                if (previewPixel != null) {
-                    if (points.size() < 2) pixels[previewPixel.x][previewPixel.y] = previewColor;
-                    else for (Point p : points) pixels[p.x][p.y] = previewColor;
-                }
-                previewPixel = null;
-                previewColor = null;
-                points.clear();
-                returnBool = true;
-            }
-            lastControlState = controlDown;
-        }
-        return returnBool;
-    }
-
-    private boolean comparePoints(Point point, Point previewPixel) {
-
-        if (previewPixel == null || point == null) return false;
-        return point.x == previewPixel.x && point.y == previewPixel.y;
-    }
-
-    public void fetchPoints(Point point) {
-
-        Color controlColor = pixels[point.x][point.y];
-        points.clear();
-        for (int i = 0; i < pixelNumber; i++) {
-            for (int j = 0; j < pixelNumber; j++) {
-                if (pixels[i][j] == controlColor) {
-                    points.add(new Point(i, j));
-                }
-            }
-        }
     }
 
     public void undo() {
@@ -252,12 +237,6 @@ public class Canvas {
             undoIndex--;
             pixels[undo.getX()][undo.getY()] = undo.getOldColor();
             System.out.println("Undid: " + undo.getString());
-            points.remove(undo.getPoint());
-            if (comparePoints(undo.getPoint(), previewPixel)) {
-                preview = false;
-                previewPixel = null;
-                previewColor = null;
-            }
         }
         System.out.println(undoIndex);
     }
@@ -279,7 +258,6 @@ public class Canvas {
 
     public void openFile(Component parent) {
 
-        fileOperationActive = true;
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home") + "/Downloads"));
         FileNameExtensionFilter pngFilter = new FileNameExtensionFilter("PNG files", "png");
@@ -303,7 +281,6 @@ public class Canvas {
                     return;
                 }
                 pixelNumber = image.getWidth();
-                System.out.println(pixelNumber);
                 pixelSize = parent.getWidth() / pixelNumber / 3;
                 pixels = new Color[pixelNumber][pixelNumber];
                 for (int i = 0; i < pixelNumber; i++) {
@@ -315,13 +292,10 @@ public class Canvas {
                 e.printStackTrace();
             }
         }
-        lastTime = System.currentTimeMillis();
-        fileOperationActive = false;
     }
 
     public void saveFile(Component parent) {
 
-        fileOperationActive = true;
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home") + "/Downloads"));
         FileNameExtensionFilter pngFilter = new FileNameExtensionFilter("PNG files", "png");
@@ -351,8 +325,6 @@ public class Canvas {
                 e.printStackTrace();
             }
         }
-        lastTime = System.currentTimeMillis();
-        fileOperationActive = false;
     }
 
     public void resize(int min) {
@@ -362,23 +334,12 @@ public class Canvas {
 
     public void flood(Color color, Component parent) {
 
-        if (preview) {
-            preview = false;
-            pixels[previewPixel.x][previewPixel.y] = previewColor;
-            previewPixel = null;
-            if (points.size() > 1) {
-                for (Point p : points) {
-                    pixels[p.x][p.y] = previewColor;
-                }
-            }
-            previewColor = null;
-            points.clear();
-        }
         int confirm;
         confirm = JOptionPane.showConfirmDialog(parent, "Fill entire canvas?", "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JFileChooser.APPROVE_OPTION) {
             for (int i = 0; i < pixelNumber; i++) {
                 for (int j = 0; j < pixelNumber; j++) {
+                    addToUndo(color, new Point(i, j));
                     pixels[i][j] = color;
                 }
             }
@@ -387,8 +348,7 @@ public class Canvas {
 
     public void toggleGrid() {
 
-        grid = !grid;
-        System.out.println("Grid: " + grid);
+        showGrid = !showGrid;
     }
 
     public int getPixelNumber() {
@@ -401,6 +361,7 @@ public class Canvas {
 
         pixelNumber = value;
         pixelSize = width / pixelNumber / 3;
+        if (pixelSize < 1) pixelSize = 1;
         pixels = new Color[pixelNumber][pixelNumber];
         for (int i = 0; i < pixelNumber; i++) {
             for (int j = 0; j < pixelNumber; j++) {
@@ -416,8 +377,13 @@ public class Canvas {
 
     public int getBrushSize() {
 
-            return brushSize;
+        return brushSize;
 
+    }
+
+    public void setGridColor(Color color) {
+
+        gridColor = color;
     }
 
 }

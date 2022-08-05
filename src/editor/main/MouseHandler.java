@@ -5,76 +5,15 @@ import java.awt.event.*;
 
 
 public class MouseHandler implements MouseListener, MouseWheelListener, MouseMotionListener {
-    int mouseX = 0;
-    int mouseY = 0;
-    int wheelAmount = 0;
+    EditorPanel editorPanel;
     boolean leftClick = false;
     boolean rightClick = false;
     boolean middleClick = false;
-    boolean shortRightClick = false;
-    boolean shortLeftClick = false;
-    boolean doubleClick = false;
+    int mouseX = 0, mouseY = 0;
 
+    public MouseHandler(EditorPanel editorPanelIN) {
 
-    public boolean isDoubleClick() {
-
-        return doubleClick;
-    }
-
-    public void setDoubleClick(boolean doubleClick) {
-
-        this.doubleClick = doubleClick;
-    }
-
-    public boolean isShortLeftClick() {
-
-        return shortLeftClick;
-    }
-
-    public void setShortLeftClick(boolean shortLeftClick) {
-
-        this.shortLeftClick = shortLeftClick;
-    }
-
-    public boolean isShortRightClick() {
-
-        return shortRightClick;
-    }
-
-    public void setShortRightClick(boolean shortRightClick) {
-
-        this.shortRightClick = shortRightClick;
-    }
-
-    public boolean isMiddleClick() {
-
-        return middleClick;
-    }
-
-    public void setMiddleClick(boolean middleClick) {
-
-        this.middleClick = middleClick;
-    }
-
-    public boolean isRightClick() {
-
-        return rightClick;
-    }
-
-    public int getWheelAmount() {
-
-        return wheelAmount;
-    }
-
-    public void setWheelAmount(int wheelAmountIN) {
-
-        wheelAmount = wheelAmountIN;
-    }
-
-
-    public boolean isLeftClick() {
-
-        return leftClick;
+        editorPanel = editorPanelIN;
     }
 
     public int getMouseX() {
@@ -87,20 +26,20 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
         return mouseY;
     }
 
-
     @Override
     public void mouseClicked(MouseEvent e) {
 
-        if (e.getButton() == MouseEvent.BUTTON3) {
-            shortRightClick = true;
-        }
         if (e.getButton() == MouseEvent.BUTTON1) {
-            shortLeftClick = true;
+            editorPanel.handleLeftClick(e.getX(), e.getY());
             if (e.getClickCount() == 2) {
-                doubleClick = true;
-                mouseX = e.getX();
-                mouseY = e.getY();
+                editorPanel.doubleClick(e.getX(), e.getY());
             }
+        }
+        if (e.getButton() == MouseEvent.BUTTON2) {
+            editorPanel.toggleZoom();
+        }
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            editorPanel.handleRightClick(e.getX(), e.getY());
         }
     }
 
@@ -109,6 +48,9 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
 
         if (e.getButton() == MouseEvent.BUTTON1) {
             leftClick = true;
+        }
+        if (e.getButton() == MouseEvent.BUTTON2) {
+            middleClick = true;
         }
         if (e.getButton() == MouseEvent.BUTTON3) {
             rightClick = true;
@@ -122,7 +64,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
             leftClick = false;
         }
         if (e.getButton() == MouseEvent.BUTTON2) {
-            middleClick = true;
+            middleClick = false;
         }
         if (e.getButton() == MouseEvent.BUTTON3) {
             rightClick = false;
@@ -142,30 +84,32 @@ public class MouseHandler implements MouseListener, MouseWheelListener, MouseMot
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
 
-        wheelAmount = e.getWheelRotation();
-        mouseX = e.getX();
-        mouseY = e.getY();
+        editorPanel.handleMouseWheel(e.getWheelRotation(), e.getX(), e.getY());
+
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
 
-        mouseX = e.getX();
-        mouseY = e.getY();
+        if (leftClick) {
+            editorPanel.handleLeftClick(e.getX(), e.getY());
+        }
+        if (rightClick) {
+            editorPanel.handleRightClick(e.getX(), e.getY());
+        }
+        if (middleClick) {
+            editorPanel.toggleZoom();
+        }
 
     }
 
     @Override
     public void mouseMoved(MouseEvent e) {
 
+        editorPanel.handleMouseMoved(e.getX(), e.getY());
         mouseX = e.getX();
         mouseY = e.getY();
-
     }
 
-    public void setLeftClick(boolean leftClickIn) {
-
-        leftClick = leftClickIn;
-    }
 
 }
