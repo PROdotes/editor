@@ -143,11 +143,6 @@ public class Canvas {
 
         Point centerPoint = checkBounds(mouseX, mouseY);
         if (centerPoint != null) {
-            if (drawPixels.size() > 0) {
-                if (drawPixels.get(0).x == centerPoint.x && drawPixels.get(0).y == centerPoint.y) {
-                    return true;
-                }
-            }
             if (!controlDown) {
                 drawPixels.clear();
                 drawPixels.add(centerPoint);
@@ -172,9 +167,8 @@ public class Canvas {
     public boolean setPixelColor(int mouseX, int mouseY, Color color, boolean controlDown) {
 
         Point point = checkBounds(mouseX, mouseY);
-        Point oldPoint = drawPixels.size() > 0 ? drawPixels.get(0) : point;
-        if (point != null) preview(mouseX, mouseY, controlDown);
-        if (point != null && pixels[point.x][point.y] != color) {
+        if (point != null) {
+            preview(mouseX, mouseY, controlDown);
             if (!controlDown) {
 
                 int end = brushSize / 2;
@@ -202,24 +196,37 @@ public class Canvas {
                     }
                 }
 
-                for (Point drawPixel : drawPixels) {
-                    addToUndo(color, drawPixel);
-                    pixels[drawPixel.x][drawPixel.y] = color;
+                if (checkPixels(color)) {
+                    for (Point drawPixel : drawPixels) {
+                        if (pixels[drawPixel.x][drawPixel.y] != color) {
+                            addToUndo(color, drawPixel);
+                            pixels[drawPixel.x][drawPixel.y] = color;
+                        }                    }
+                    pushTempToUndo();
                 }
-                pushTempToUndo();
             } else {
-                for (Point drawPixel : drawPixels) {
-                    addToUndo(color, drawPixel);
-                    pixels[drawPixel.x][drawPixel.y] = color;
+                if (checkPixels(color)) {
+                    for (Point drawPixel : drawPixels) {
+                        addToUndo(color, drawPixel);
+                        pixels[drawPixel.x][drawPixel.y] = color;
+                    }
+                    pushTempToUndo();
+                    drawPixels.clear();
+                    drawPixels.add(point);
                 }
-                pushTempToUndo();
-                drawPixels.clear();
-                drawPixels.add(point);
             }
             return true;
         }
-        if (point != null)
-            return oldPoint.x != point.x || oldPoint.y != point.y;
+        return false;
+    }
+
+    private boolean checkPixels(Color color) {
+        System.out.println(color.getRed() + " " + color.getGreen() + " " + color.getBlue());
+        for (Point point : drawPixels) {
+            System.out.println(pixels[point.x][point.y].getRed() + " " + pixels[point.x][point.y].getGreen() + " " + pixels[point.x][point.y].getBlue());
+            if (!pixels[point.x][point.y].equals(color))
+                return true;
+        }
         return false;
     }
 
