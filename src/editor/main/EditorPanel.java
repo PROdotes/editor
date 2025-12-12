@@ -1,13 +1,11 @@
 package editor.main;
 
-
 import editor.UI.Button;
 import editor.UI.Canvas;
 import editor.UI.*;
 
 import javax.swing.*;
 import java.awt.*;
-
 
 public class EditorPanel extends JPanel {
 
@@ -45,7 +43,7 @@ public class EditorPanel extends JPanel {
         setFocusable(true);
     }
 
-    public void startThread() {
+    public void initialize() {
 
         drawSliders();
     }
@@ -71,7 +69,9 @@ public class EditorPanel extends JPanel {
             if (click) {
                 resizeCanvas.click();
                 int resizeValue = (brush.getValue() == 1) ? 2 : brush.getValue();
-                int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to resize the canvas to the brush size of " + resizeValue + " pixels?", "Resize Canvas", JOptionPane.YES_NO_OPTION);
+                int option = JOptionPane.showConfirmDialog(this,
+                        "Are you sure you want to resize the canvas to the brush size of " + resizeValue + " pixels?",
+                        "Resize Canvas", JOptionPane.YES_NO_OPTION);
                 if (option == JOptionPane.YES_OPTION) {
                     int minPixelSize = Math.min(this.getWidth() - leftPadding, this.getHeight());
                     canvas.changePixels(resizeValue, minPixelSize);
@@ -116,7 +116,7 @@ public class EditorPanel extends JPanel {
             }
             if (canvas.getBrushSize() > pixelNumber) {
                 canvas.setBrushSize(pixelNumber);
-                //brush.setValue(pixelNumber);
+                // brush.setValue(pixelNumber);
             }
         }
         if (updatedHSB) {
@@ -149,8 +149,10 @@ public class EditorPanel extends JPanel {
     private void drawSliders() {
 
         hue.setSlider(SliderImageGenerator.generateHue(pickedColor.getSaturation(), pickedColor.getBrightness()));
-        saturation.setSlider(SliderImageGenerator.generateSaturation(pickedColor.getHue(), pickedColor.getBrightness()));
-        brightness.setSlider(SliderImageGenerator.generateBrightness(pickedColor.getHue(), pickedColor.getSaturation()));
+        saturation
+                .setSlider(SliderImageGenerator.generateSaturation(pickedColor.getHue(), pickedColor.getBrightness()));
+        brightness
+                .setSlider(SliderImageGenerator.generateBrightness(pickedColor.getHue(), pickedColor.getSaturation()));
         red.setSlider(SliderImageGenerator.generateRed(pickedColor.getGreen(), pickedColor.getBlue()));
         green.setSlider(SliderImageGenerator.generateGreen(pickedColor.getRed(), pickedColor.getBlue()));
         blue.setSlider(SliderImageGenerator.generateBlue(pickedColor.getRed(), pickedColor.getGreen()));
@@ -173,7 +175,7 @@ public class EditorPanel extends JPanel {
         openFile.draw(g2d);
         saveFile.draw(g2d);
         resizeCanvas.draw(g2d);
-        g.dispose();
+        // Do NOT call g.dispose() here; the system handles it.
     }
 
     private void drawInformation(Graphics2D g2d) {
@@ -211,7 +213,6 @@ public class EditorPanel extends JPanel {
         canvas.redo();
         repaint();
     }
-
 
     public void doubleClick(int x, int y) {
 
